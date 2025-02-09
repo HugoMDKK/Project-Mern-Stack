@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 
 
 connectDatabase()
-app.use(express.json());s
+app.use(express.json());
 
 app.use("/user", userRoute);
 app.use("/auth", authRoute);
