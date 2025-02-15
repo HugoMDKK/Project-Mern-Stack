@@ -9,13 +9,13 @@ export const authMiddleware = (req, res, next) => {
     const { authorization } = req.headers;
 
     if (!authorization) {
-      return res.send(401);
+      return res.sendStatus(401);
     }
 
     const parts = authorization.split(" ");
 
     if (parts.length !== 2) {
-      return res.send(401);
+      return res.sendStatus(401);
     }
 
     const [schema, token] = parts;
@@ -36,9 +36,9 @@ export const authMiddleware = (req, res, next) => {
       }
 
       req.userId = user._id;
-    });
-
-    next();
+      return next();
+  });
+  
   } catch (err) {
     res.status(500).send(err.message);
   }
