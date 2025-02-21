@@ -4,19 +4,14 @@ import {
   countNews,
   topNewsService,
   findByIdService,
-  searchByTitleService,  
+  searchByTitleService,
   byUserService,
+  updateService,
 } from "../services/news.service.js";
 
 export const create = async (req, res) => {
   try {
     const { title, text, banner } = req.body;
-
-    if (!title || !banner || !text) {
-      res.status(400).send({
-        message: "Submit all fields for registration the news",
-      });
-    }
 
     await createService({
       title,
@@ -39,7 +34,7 @@ export const findAll = async (req, res) => {
     offset = Number(offset);
 
     if (!limit) {
-      limit = 5;
+      limit = 10;
     }
 
     if (!offset) {
@@ -190,6 +185,29 @@ export const byUser = async (req, res) => {
         userAvatar: item.user.avatar,
       })),
     });
+  } catch (err) {
+    res.status(500).send({ message: err.message });
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const { title, text, banner } = req.body;
+    const { id } = req.params;
+
+    const news = await findByIdService(id);
+
+    console.log(typeof news.user._id, typeof req.userId);
+
+    if (news.user._id.toString() !== req.userId.toString()) {
+      return res.status(400).send({
+        message: "You didn't update this post",
+      });
+    }
+
+    await updateService(id, title, text, banner);
+
+    return res.send({ message: "Post successfuly updated!" });
   } catch (err) {
     res.status(500).send({ message: err.message });
   }
