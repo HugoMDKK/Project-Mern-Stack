@@ -53,7 +53,7 @@ export const validUpdateNews = (req, res, next) => {
   // Verifica se pelo menos um dos campos foi enviado
   if (!title && !text && !banner) {
     return res.status(400).send({
-      message: "Submit at least one field to update the post",
+      message: "Submit at least one field to update the News",
     });
   }
 

@@ -8,10 +8,10 @@ import {
   findById,
   searchByTitle,
   byUser,
-  update,
-  validCreateNews,
-  validUpdateNews,
+  update,  
+  erase,
 } from "../controllers/news.controller.js";
+import { validCreateNews, validUpdateNews,} from "../middlewares/global.middlewares.js"
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 router.post("/", validCreateNews, authMiddleware, create);
@@ -21,5 +21,6 @@ router.get("/search", searchByTitle);
 router.get("/byUser", authMiddleware, byUser);
 router.get("/:id", authMiddleware, findById);
 router.patch("/:id", validUpdateNews, authMiddleware, update);
+router.delete("/:id", authMiddleware, erase);
 
 export default router;
