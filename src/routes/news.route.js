@@ -10,6 +10,7 @@ import {
   byUser,
   update,  
   erase,
+  likeNews,
 } from "../controllers/news.controller.js";
 import { validCreateNews, validUpdateNews,} from "../middlewares/global.middlewares.js"
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -22,5 +23,6 @@ router.get("/byUser", authMiddleware, byUser);
 router.get("/:id", authMiddleware, findById);
 router.patch("/:id", validUpdateNews, authMiddleware, update);
 router.delete("/:id", authMiddleware, erase);
+router.patch("/like/:id", authMiddleware, likeNews);
 
 export default router;
