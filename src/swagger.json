@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://api-breakingnews-qci0.onrender.com",
+            "url": "https://project-mern-stack-6zqj.onrender.com",
             "description": "Render Server"
         },
         {
