@@ -61,12 +61,7 @@ export const findAll = async (req, res) => {
         ? `${currentUrl}?limit=${limit}&offset=${previous}`
         : null;
 
-    if (news.length === 0) {
-      return res
-        .sendStatus(400)
-        .send({ message: "There are no registered news" });
-    }
-
+    
     res.send({
       nextUrl,
       previousUrl,
