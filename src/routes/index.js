@@ -1,5 +1,8 @@
 import { Router } from "express";
 import userRouter from "./user.route.js";
+import authRouter from "./auth.route.js";
+import newsRouter from "./news.route.js";
+import swaggerRouter from "./swagger.route.cjs";
 
 const router = Router();
 
