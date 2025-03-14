@@ -4,14 +4,14 @@ export const create = async (req, res) => {
   try {
     const { name, username, email, password, avatar, background } = req.body;
 
-    if (!username || !name || !email || !password || !avatar || !background) {
-      res.status(400).send({ message: "Submit all fields for registration" });
-    }
-    const user = await userService.createService(req.body);
-
-    if (!user) {
-      return res.status(400).send({ message: "Error creating User" });
-    }
+    const user = await userService.createUser({
+      name,
+      username,
+      email,
+      password,
+      avatar,
+      background,
+    });
 
     res.status(201).send({
       message: "User created sucessfully",
@@ -31,12 +31,7 @@ export const create = async (req, res) => {
 
 export const findAll = async (req, res) => {
   try {
-    const users = await userService.findAllService();
-
-    if (users.length === 0) {
-      return res.send(400).send({ message: "There are no registered users" });
-    }
-
+    const users = await userService.findAllUsers(); 
     res.send(users);
   } catch (err) {
     res.status(500).send({ message: err.message });
@@ -45,39 +40,27 @@ export const findAll = async (req, res) => {
 
 export const findById = async (req, res) => {
   try {
-    const user = await req.user;
-
+    const user = await userService.findUserById(req.params.id);
     res.send(user);
   } catch (err) {
     res.status(500).send({ message: err.message });
   }
 };
-
 export const update = async (req, res) => {
   try {
     const { name, username, email, password, avatar, background } = req.body;
-
-    if (!name && !username && !email && !password && !avatar && !background) {
-      res.status(400).send({ message: "Submit at least one field for update" });
-    }
-
-    const { id, user } = req;
-
-    await userService.updateService(
-      id,
+    const updatedUser = await userService.updateUser(req.params.id, {
       name,
       username,
       email,
       password,
       avatar,
-      background
-    );
-
-    res.send({ message: "user sucessfully updated" });
+      background,
+    });
+    res.send({ message: "User updated successfully", user: updatedUser });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    res.status(400).send({ message: err.message });
   }
 };
-
 
 export default { create, findAll, findById, update };
