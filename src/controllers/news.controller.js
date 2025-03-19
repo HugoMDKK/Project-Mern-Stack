@@ -1,235 +1,103 @@
-import {
-  createService,
-  findAllService,
-  countNews,
-  topNewsService,
-  findByIdService,
-  searchByTitleService,
-  byUserService,
-  updateService,
-  eraseService,
-  likeNewsService,
-  deleteLikeService,
-  addCommentService,
-  deleteCommentService,
-} from "../services/news.service.js";
+import * as newsService from "../services/news.service.js";
+
+const handleError = (res, err) => {
+  res.status(500).send({ message: err.message });
+};
 
 export const create = async (req, res) => {
   try {
     const { title, text, banner } = req.body;
-
-    await createService({
-      title,
-      text,
-      banner,
-      user: req.userId,
-    });
-
+    await newsService.createService({ title, text, banner, user: req.userId });
     res.sendStatus(201);
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const findAll = async (req, res) => {
   try {
-    let { limit, offset } = req.query;
-
+    let { limit = 10, offset = 0 } = req.query;
     limit = Number(limit);
     offset = Number(offset);
 
-    if (!limit) {
-      limit = 10;
-    }
+    const [news, total] = await Promise.all([
+      newsService.findAllService(offset, limit),
+      newsService.countNewsService()
+    ]);
 
-    if (!offset) {
-      offset = 0;
-    }
-
-    const news = await findAllService(offset, limit);
-    const total = await countNews();
     const currentUrl = req.baseUrl;
-    console.log(currentUrl);
+    const nextUrl = offset + limit < total ? `${currentUrl}?limit=${limit}&offset=${offset + limit}` : null;
+    const previousUrl = offset - limit >= 0 ? `${currentUrl}?limit=${limit}&offset=${offset - limit}` : null;
 
-    const next = offset + limit;
-    const nextUrl =
-      next < total ? `${currentUrl}?limit=${limit}&offset=${next}` : null;
-
-    const previous = offset - limit < 0 ? null : offset - limit;
-    const previousUrl =
-      previous != null
-        ? `${currentUrl}?limit=${limit}&offset=${previous}`
-        : null;
-
-    
-    res.send({
-      nextUrl,
-      previousUrl,
-      limit,
-      offset,
-      total,
-
-      results: news.map((item) => ({
-        id: item._id,
-        title: item.title,
-        text: item.text,
-        banner: item.banner,
-        likes: item.likes,
-        comments: item.comments,
-        name: item.user.name,
-        userName: item.user.username,
-        userAvatar: item.user.avatar,
-      })),
-    });
+    res.send({ nextUrl, previousUrl, limit, offset, total, results: formatNewsList(news) });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const topNews = async (req, res) => {
   try {
-    const news = await topNewsService();
-
-    if (!news) {
-      return res
-        .status(400)
-        .send({ message: "There is no registered topNews" });
-    }
-
-    res.send({
-      news: {
-        id: news._id,
-        title: news.title,
-        text: news.text,
-        banner: news.banner,
-        likes: news.likes,
-        comments: news.comments,
-        name: news.user.name,
-        userName: news.user.username,
-        userAvatar: news.user.avatar,
-      },
-    });
+    const news = await newsService.topNewsService();
+    if (!news) return res.status(400).send({ message: "No top news found" });
+    res.send({ news: formatNews(news) });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const findById = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const news = await findByIdService(id);
-
-    return res.send({
-      news: {
-        id: news._id,
-        title: news.title,
-        text: news.text,
-        banner: news.banner,
-        likes: news.likes,
-        comments: news.comments,
-        name: news.user.name,
-        userName: news.user.username,
-        userAvatar: news.user.avatar,
-      },
-    });
+    const news = await newsService.findByIdService(req.params.id);
+    res.send({ news: formatNews(news) });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const searchByTitle = async (req, res) => {
   try {
-    const { title } = req.query;
-
-    const news = await searchByTitleService(title);
-
-    if (news.length === 0) {
-      return res
-        .status(400)
-        .send({ message: "There are no news with this title" });
-    }
-    return res.send({
-      results: news.map((item) => ({
-        id: item._id,
-        title: item.title,
-        text: item.text,
-        banner: item.banner,
-        likes: item.likes,
-        comments: item.comments,
-        name: item.user.name,
-        userName: item.user.username,
-        userAvatar: item.user.avatar,
-      })),
-    });
+    const news = await newsService.searchByTitleService(req.query.title);
+    if (news.length === 0) return res.status(400).send({ message: "No news found with this title" });
+    res.send({ results: formatNewsList(news) });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const byUser = async (req, res) => {
   try {
-    const id = req.userId;
-    const news = await byUserService(id);
-
-    return res.send({
-      results: news.map((item) => ({
-        id: item._id,
-        title: item.title,
-        text: item.text,
-        banner: item.banner,
-        likes: item.likes,
-        comments: item.comments,
-        name: item.user.name,
-        userName: item.user.username,
-        userAvatar: item.user.avatar,
-      })),
-    });
+    const news = await newsService.byUserService(req.userId);
+    res.send({ results: formatNewsList(news) });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const update = async (req, res) => {
   try {
-    const { title, text, banner } = req.body;
     const { id } = req.params;
-
-    const news = await findByIdService(id);
-
-    console.log(typeof news.user._id, typeof req.userId);
-
+    const news = await newsService.findByIdService(id);
     if (news.user._id.toString() !== req.userId.toString()) {
-      return res.status(400).send({
-        message: "You didn't update this post",
-      });
+      return res.status(403).send({ message: "Unauthorized update" });
     }
-
-    await updateService(id, title, text, banner);
-
-    return res.send({ message: "News successfuly updated!" });
+    await newsService.updateService(id, req.body);
+    res.send({ message: "News updated successfully" });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const erase = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const news = await findByIdService(id);
-
+    const news = await newsService.findByIdService(id);
     if (news.user._id.toString() !== req.userId.toString()) {
-      return res.status(400).send({
-        message: "You didn't delete this News",
-      });
+      return res.status(403).send({ message: "Unauthorized deletion" });
     }
-
-    await eraseService(id);
-
-    return res.send({ message: "News deleted successfully" });
+    await newsService.eraseService(id);
+    res.send({ message: "News deleted successfully" });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -237,34 +105,24 @@ export const likeNews = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId;
-
-    const newsLiked = await likeNewsService(id, userId);
-
-    if (!newsLiked) {
-      await deleteLikeService(id, userId);
-      return res.status(200).send({ message: "Like removed successfully" });
+    const liked = await newsService.likeNewsService(id, userId);
+    if (!liked) {
+      await newsService.deleteLikeService(id, userId);
+      return res.send({ message: "Like removed successfully" });
     }
-    res.send({ message: "Like successfully added" });
+    res.send({ message: "Like added successfully" });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
 export const addComment = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.userId;
-    const { comment } = req.body;
-
-    if (!comment) {
-      return res.status(400).send({ message: "Comment is required" });
-    }
-
-    await addCommentService(id, comment, userId);
-
-    res.send({ message: "comment added successfully" });
+    if (!req.body.comment) return res.status(400).send({ message: "Comment is required" });
+    await newsService.addCommentService(req.params.id, req.body.comment, req.userId);
+    res.send({ message: "Comment added successfully" });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -272,25 +130,28 @@ export const deleteComment = async (req, res) => {
   try {
     const { idNews, idComment } = req.params;
     const userId = req.userId;
+    const updatedNews = await newsService.deleteCommentService(idNews, idComment, userId);
 
-    const commentDelete = await deleteCommentService(idNews, idComment, userId);
-
-    const commentFinder = commentDeleted.comments.find(
-      (comment) => comment.idComment === idComment
-    );
-
-    if(!commentFinder) {
-      return res.status(400).send({ message: "Comment not found" });
-    }
-
-    if (commentDelete.comments.userId !== userId) {
-      return res
-        .status(400)
-        .send({ message: "You didn't delete this comment" });
-    }
+    const commentExists = updatedNews.comments.some(comment => comment.idComment === idComment);
+    if (!commentExists) return res.status(400).send({ message: "Comment not found" });
 
     res.send({ message: "Comment deleted successfully" });
   } catch (err) {
-    res.status(500).send({ message: err.message });
+    handleError(res, err);
   }
 };
+
+// Funções auxiliares para formatação de resposta
+const formatNews = (news) => ({
+  id: news._id,
+  title: news.title,
+  text: news.text,
+  banner: news.banner,
+  likes: news.likes,
+  comments: news.comments,
+  name: news.user.name,
+  userName: news.user.username,
+  userAvatar: news.user.avatar,
+});
+
+const formatNewsList = (newsList) => newsList.map(formatNews);

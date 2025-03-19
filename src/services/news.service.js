@@ -1,65 +1,66 @@
-import News from "../models/News.js";
+import * as newsRepository from "../repositories/news.repositories.js";
 
-export const createService = (body) => News.create(body);
-
-export const findAllService = (offset, limit) =>
-  News.find().sort({ _id: -1 }).skip(offset).limit(limit).populate("user");
-
-export const countNews = () => News.countDocuments();
-
-export const topNewsService = () =>
-  News.findOne().sort({ _id: -1 }).populate("user");
-
-export const findByIdService = (id) => News.findById(id).populate("user");
-
-export const searchByTitleService = (title) =>
-  News.find({
-    title: { $regex: `${title || ""}`, $options: "i" },
-  })
-    .sort({ _id: -1 })
-    .populate("user");
-
-export const byUserService = (id) =>
-  News.find({ user: id }).sort({ _id: -1 }).populate("user");
-
-export const updateService = (id, title, text, banner) =>
-  News.findOneAndUpdate(
-    { _id: id },
-    { title, text, banner },
-    { rawResult: true }
-  );
-
-export const eraseService = (id) => News.findOneAndDelete({ _id: id });
-
-export const likeNewsService = async (idNews, userId) =>
-  News.findOneAndUpdate(
-    { _id: idNews, "likes.userId": { $nin: [userId] } },
-    { $push: { likes: { userId, created: new Date() } } }
-  );
-
-export const deleteLikeService = async (idNews, userId) =>
-  News.findOneAndUpdate({ _id: idNews }, { $pull: { likes: { userId } } });
-
-export const addCommentService = async (idNews, comment, userId) => {
-  const idComment = Math.floor(Date.now() * Math.random()).toString(36);
-
-  return News.findOneAndUpdate(
-    { _id: idNews },
-    {
-      $push: {
-        comments: {
-          idComment,
-          userId,
-          comment,
-          createdAt: new Date(),
-        },
-      },
-    }
-  );
+// Criação de uma nova notícia
+export const createService = async (newsData) => {
+  return await newsRepository.createNews(newsData);
 };
 
-export const deleteCommentService = async (idNews, idComment, userId) =>
-  News.findOneAndUpdate(
-    { _id: idNews },
-    { $pull: { comments: { idComment, userId } } }
-  );
+// Busca todas as notícias
+export const findAllService = async (offset, limit) => {
+  return await newsRepository.findAllNews(offset, limit);
+};
+
+// Conta o total de notícias
+export const countNewsService = async () => {
+  return await newsRepository.countTotalNews();
+};
+
+// Busca a notícia mais recente
+export const topNewsService = async () => {
+  return await newsRepository.findTopNews();
+};
+
+// Busca uma notícia pelo ID
+export const findByIdService = async (id) => {
+  return await newsRepository.findNewsById(id);
+};
+
+// Busca notícias pelo título
+export const searchByTitleService = async (title) => {
+  return await newsRepository.searchNewsByTitle(title);
+};
+
+// Busca notícias de um usuário específico
+export const byUserService = async (userId) => {
+  return await newsRepository.findNewsByUserId(userId);
+};
+
+// Atualiza uma notícia
+export const updateService = async (id, updates) => {
+  return await newsRepository.updateNewsById(id, updates);
+};
+
+// Remove uma notícia
+export const eraseService = async (id) => {
+  return await newsRepository.deleteNewsById(id);
+};
+
+// Adiciona um like a uma notícia
+export const likeNewsService = async (idNews, userId) => {
+  return await newsRepository.addLikeToNews(idNews, userId);
+};
+
+// Remove um like de uma notícia
+export const deleteLikeService = async (idNews, userId) => {
+  return await newsRepository.removeLikeFromNews(idNews, userId);
+};
+
+// Adiciona um comentário a uma notícia
+export const addCommentService = async (idNews, commentData) => {
+  return await newsRepository.addCommentToNews(idNews, commentData);
+};
+
+// Remove um comentário de uma notícia
+export const deleteCommentService = async (idNews, idComment, userId) => {
+  return await newsRepository.removeCommentFromNews(idNews, idComment, userId);
+};
